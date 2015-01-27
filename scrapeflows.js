@@ -11,10 +11,6 @@ function createCORSRequest(method, url) {
     return xhr;
 }
 
-function httpResponse(logtext) {
-    console.log(logtext);
-}
-
 function httpGet(theURL) {
     var request = createCORSRequest('GET', theURL);
     request.send();
@@ -29,40 +25,61 @@ function buildRequest(state) {
     return path;
 }
 
-var states = ['AL'];
+var states = ['VA'];
 
-function addpoints(data) {
-    var jsonified = JSON.parse(data);
+function extractStationData(rawUsgsData) {
+    var jsonified = JSON.parse(rawUsgsData);
     timeSeries = jsonified.value.timeSeries;
-    var geoJSON = {};
-    geoJSON['type'] = 'FeatureCollection';
-    geoJSON['features'] = [];
+    stationData = {};
     for (var i in timeSeries) {
-        station = timeSeries[i]
-        var name = station.name;
+        station = timeSeries[i];
+        var siteName = station.sourceInfo.siteName;
+        var siteNumber = station.sourceInfo.siteCode[0].value;
         var lat = station.sourceInfo.geoLocation.geogLocation.latitude;
         var lon = station.sourceInfo.geoLocation.geogLocation.longitude;
-        var feature = {};
-        feature['type'] = 'Feature';
-        feature['geometry'] = {};
-        feature.geometry['type'] = 'Point';
-        feature.geometry['coordinates'] = [lon, lat];
-        feature['properties'] = {};
-        feature.properties['name'] = name;
-        geoJSON.features.push(feature);
-        addpoint(lat, lon, name);
-    //var stations = new L.geoJson(geoJSON, {
-    //    onEachFeature: function(feature, layer) {
-    //        layer.bindPopup(feature.properties.name);
-    //    }});
-    //map.addLayer(stations);
+        var variable = station.variable.variableName;
+        var value = station.values[0].value[0].value;
+        if (!(siteNumber in stationData)) {
+            stationData[siteNumber] = {'data':{}};
+        }
+        stationData[siteNumber]['name'] = siteName;
+        stationData[siteNumber]['lat'] = lat;
+        stationData[siteNumber]['lon'] = lon;
+        stationData[siteNumber]['data'][variable] = value;
     }
+    return stationData;
+}
+
+function convertToGeoJson(extractedData) {
+    var siteNumbers = Object.keys(extractedData);
+    features = [];
+    for (var i in siteNumbers) {
+        siteNumber = siteNumbers[i];
+        stationData = extractedData[siteNumber];
+        var siteName = stationData.name;
+        var lat = stationData.lat;
+        var lon = stationData.lon;
+        var siteData = stationData.data; 
+        turfpt = turf.point(lon, lat, {name:siteName,
+                                       number:siteNumber,
+                                       data:siteData});
+        features.push(turfpt);
+    }
+    return turf.featurecollection(features);
 }
 
 function getFlows(states) {
     for (var i = 0; i < states.length; i++) {
         var result = httpGet(buildRequest(states[i]));
         console.log(states[i] + ' - data received.');
-        addpoints(result);
+        var extracted = extractStationData(result);
+        var stations = convertToGeoJson(extracted);
+        L.geoJson(stations, {
+            onEachFeature: function(feature, layer) {
+                layer.bindPopup(feature.properties.name + '<br>' +
+                                feature.properties.number + '<br>' +
+                                JSON.stringify(feature.properties.data));
+            }
+        }).addTo(map);
     }
 }
