@@ -68,6 +68,22 @@ function convertToGeoJson(extractedData) {
     return turf.featurecollection(features);
 }
 
+function buildPopupString(feature) {
+    popupString = ('<b>' + feature.properties.name + '<br>' +
+                   'Gage Number: ' + feature.properties.number + '</b>' +
+                   '<ul>');
+    var variables = Object.keys(feature.properties.data);
+    for (var i in variables) {
+        variable = variables[i];
+        value = feature.properties.data[variable];
+        popupString = (popupString + '<li>' + variable + 
+                       ' = ' + value + '</li>');
+    }
+    popupString = popupString + '</ul>';
+    return popupString
+}
+
+
 function getFlows(states) {
     for (var i = 0; i < states.length; i++) {
         var result = httpGet(buildRequest(states[i]));
@@ -76,9 +92,7 @@ function getFlows(states) {
         var stations = convertToGeoJson(extracted);
         L.geoJson(stations, {
             onEachFeature: function(feature, layer) {
-                layer.bindPopup(feature.properties.name + '<br>' +
-                                feature.properties.number + '<br>' +
-                                JSON.stringify(feature.properties.data));
+                layer.bindPopup(buildPopupString(feature));
             }
         }).addTo(map);
     }
