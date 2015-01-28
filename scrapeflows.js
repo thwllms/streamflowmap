@@ -25,7 +25,7 @@ function buildRequest(state) {
     return path;
 }
 
-var states = ['VA'];
+var states = ['MO'];
 
 function extractStationData(rawUsgsData) {
     var jsonified = JSON.parse(rawUsgsData);
@@ -33,12 +33,16 @@ function extractStationData(rawUsgsData) {
     stationData = {};
     for (var i in timeSeries) {
         station = timeSeries[i];
-        var siteName = station.sourceInfo.siteName;
-        var siteNumber = station.sourceInfo.siteCode[0].value;
-        var lat = station.sourceInfo.geoLocation.geogLocation.latitude;
-        var lon = station.sourceInfo.geoLocation.geogLocation.longitude;
-        var variable = station.variable.variableName;
-        var value = station.values[0].value[0].value;
+        try {
+            var siteName = station.sourceInfo.siteName;
+            var siteNumber = station.sourceInfo.siteCode[0].value;
+            var lat = station.sourceInfo.geoLocation.geogLocation.latitude;
+            var lon = station.sourceInfo.geoLocation.geogLocation.longitude;
+            var variable = station.variable.variableName;
+            var value = station.values[0].value[0].value;
+        } catch(err) {
+            console.log('Error - ' + siteNumber);
+        }
         if (!(siteNumber in stationData)) {
             stationData[siteNumber] = {'data':{}};
         }
@@ -62,6 +66,7 @@ function convertToGeoJson(extractedData) {
         var siteData = stationData.data; 
         turfpt = turf.point(lon, lat, {name:siteName,
                                        number:siteNumber,
+                                       random:Math.random()*10,
                                        data:siteData});
         features.push(turfpt);
     }
@@ -80,20 +85,33 @@ function buildPopupString(feature) {
                        ' = ' + value + '</li>');
     }
     popupString = popupString + '</ul>';
-    return popupString
+    return popupString;
 }
 
+function getGeoJsonData(state) {
+    result = httpGet(buildRequest(state));
+    console.log(state + ' - data received.');
+    extracted = extractStationData(result);
+    stations = convertToGeoJson(extracted);
+    return stations;
+}
 
-function getFlows(states) {
-    for (var i = 0; i < states.length; i++) {
-        var result = httpGet(buildRequest(states[i]));
-        console.log(states[i] + ' - data received.');
-        var extracted = extractStationData(result);
-        var stations = convertToGeoJson(extracted);
-        L.geoJson(stations, {
-            onEachFeature: function(feature, layer) {
-                layer.bindPopup(buildPopupString(feature));
-            }
-        }).addTo(map);
-    }
+function mapState(state) {
+    geoJsonData = getGeoJsonData(state);
+    L.geoJson(geoJsonData, {
+        onEachFeature: function(feature, layer) {
+            layer.bindPopup(buildPopupString(feature));
+        }
+    }).addTo(map);
+}
+
+function mapIsolines(state, variable) {
+    geoJsonData = getGeoJsonData(state);
+    console.log(geoJsonData);
+    breaks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    console.log(state + ' - processing isolines');
+    isolined = turf.isolines(geoJsonData, variable, 100, breaks);
+    console.log(state + ' - finished processing isolines');
+    console.log(isolined);
+    L.geoJson(isolined).addTo(map);
 }
