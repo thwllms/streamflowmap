@@ -25,8 +25,6 @@ function buildRequest(state) {
     return path;
 }
 
-var states = ['MO'];
-
 function extractStationData(rawUsgsData) {
     var jsonified = JSON.parse(rawUsgsData);
     timeSeries = jsonified.value.timeSeries;
@@ -64,10 +62,16 @@ function convertToGeoJson(extractedData) {
         var lat = stationData.lat;
         var lon = stationData.lon;
         var siteData = stationData.data; 
-        turfpt = turf.point(lon, lat, {name:siteName,
-                                       number:siteNumber,
-                                       random:Math.random()*10,
-                                       data:siteData});
+        var siteVariables = Object.keys(siteData);
+        var properties = {'name':siteName, 
+                          'number':siteNumber,
+                          'variables':siteVariables};
+        for (var i in siteVariables) {
+            siteVariable = siteVariables[i];
+            properties[siteVariable] = siteData[siteVariable];
+        }
+        turfpt = turf.point(lon, lat, properties);
+        console.log(turfpt);
         features.push(turfpt);
     }
     return turf.featurecollection(features);
@@ -77,10 +81,10 @@ function buildPopupString(feature) {
     popupString = ('<b>' + feature.properties.name + '<br>' +
                    'Gage Number: ' + feature.properties.number + '</b>' +
                    '<ul>');
-    var variables = Object.keys(feature.properties.data);
+    var variables = feature.properties.variables;
     for (var i in variables) {
         variable = variables[i];
-        value = feature.properties.data[variable];
+        value = feature.properties[variable];
         popupString = (popupString + '<li>' + variable + 
                        ' = ' + value + '</li>');
     }
@@ -100,9 +104,11 @@ function mapState(state) {
     geoJsonData = getGeoJsonData(state);
     L.geoJson(geoJsonData, {
         onEachFeature: function(feature, layer) {
-            layer.bindPopup(buildPopupString(feature));
+            popupString = buildPopupString(feature);
+            layer.bindPopup(popupString);
         }
     }).addTo(map);
+    console.log(geoJsonData);
 }
 
 function mapIsolines(state, variable) {
