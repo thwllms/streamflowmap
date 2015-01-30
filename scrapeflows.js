@@ -1,3 +1,6 @@
+// GLobal array for storing variable code names.
+var VARIABLE_CODES = {};
+
 function createCORSRequest(method, url) {
     var xhr = new XMLHttpRequest();
     if ("withCredentials" in xhr) { 
@@ -111,13 +114,10 @@ function mapState(state) {
     console.log(geoJsonData);
 }
 
-function mapIsolines(state, variable) {
+function mapStateIsolines(state, variable, resolution, breaks) {
     geoJsonData = getGeoJsonData(state);
-    console.log(geoJsonData);
-    breaks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     console.log(state + ' - processing isolines');
-    isolined = turf.isolines(geoJsonData, variable, 100, breaks);
+    isolined = turf.isolines(geoJsonData, variable, resolution, breaks);
     console.log(state + ' - finished processing isolines');
-    console.log(isolined);
     L.geoJson(isolined).addTo(map);
 }
