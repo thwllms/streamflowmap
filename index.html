@@ -14,13 +14,22 @@
     <script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
     <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
     <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+    <script src="bower_components/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
     <script src="leaflet_embed.js"></script>
     <script src="scrapeflows.js"></script>
     <script src="turf.js"></script>
     <script>
         
         initmap();
-        mapState('DE');
+        states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN',
+                  'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV',
+                  'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN',
+                  'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'];
+        for (i in states) {
+            state = states[i];
+            mapStateMarkerCluster(state);
+        }
+        //mapState('DE');
         //breaks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         //mapStateIsolines('VA', 'random', 100, breaks);
 
