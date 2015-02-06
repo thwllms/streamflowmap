@@ -74,7 +74,6 @@ function convertToGeoJson(extractedData) {
             properties[siteVariable] = siteData[siteVariable];
         }
         turfpt = turf.point(lon, lat, properties);
-        console.log(turfpt);
         features.push(turfpt);
     }
     return turf.featurecollection(features);
@@ -111,7 +110,21 @@ function mapState(state) {
             layer.bindPopup(popupString);
         }
     }).addTo(map);
-    console.log(geoJsonData);
+}
+
+function mapStateMarkerCluster(state) {
+    geoJsonData = getGeoJsonData(state);
+    var markers = new L.MarkerClusterGroup();
+    for (var i in geoJsonData.features) {
+        feature = geoJsonData.features[i];
+        lat = feature.geometry.coordinates[1];
+        lon = feature.geometry.coordinates[0];
+        marker = L.marker(new L.LatLng(lat, lon), { });
+        popup = buildPopupString(feature);
+        marker.bindPopup(popup);
+        markers.addLayer(marker);
+    }
+    map.addLayer(markers);
 }
 
 function mapStateIsolines(state, variable, resolution, breaks) {
