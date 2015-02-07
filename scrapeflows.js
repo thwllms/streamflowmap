@@ -1,4 +1,4 @@
-// GLobal array for storing variable codes/names.
+// GLobal array for referencing variable codes/names.
 var VARIABLE_CODES = {};
 
 function createCORSRequest(method, url) {
@@ -17,6 +17,7 @@ function createCORSRequest(method, url) {
 function httpGet(theURL, callback) {
     var request = createCORSRequest('GET', theURL);
     request.onload = function() {
+        console.log(theURL)
         callback(this.responseText);
     }
     request.send();
@@ -43,10 +44,16 @@ function buildBboxRequest(box) {
     return path;
 }
 
+function buildGageSiteURL(gage) {
+    var pathBegin = 'http://waterdata.usgs.gov/usa/nwis/uv?site_no=';
+    var path = pathBegin + gage;
+    return path
+}
+
 function extractStationData(rawUsgsData) {
     var jsonified = JSON.parse(rawUsgsData);
     timeSeries = jsonified.value.timeSeries;
-    stationData = {};
+    extractedData = {};
     for (var i in timeSeries) {
         station = timeSeries[i];
         try {
@@ -54,20 +61,22 @@ function extractStationData(rawUsgsData) {
             var siteNumber = station.sourceInfo.siteCode[0].value;
             var lat = station.sourceInfo.geoLocation.geogLocation.latitude;
             var lon = station.sourceInfo.geoLocation.geogLocation.longitude;
-            var variable = station.variable.variableName;
+            var variableName = station.variable.variableName;
+            var variableCode = station.variable.variableCode[0].value;
+            VARIABLE_CODES[variableCode] = variableName;
             var value = station.values[0].value[0].value;
         } catch(err) {
             console.log('Error - ' + siteNumber);
         }
-        if (!(siteNumber in stationData)) {
-            stationData[siteNumber] = {'data':{}};
+        if (!(siteNumber in extractedData)) {
+            extractedData[siteNumber] = {'data':{}};
         }
-        stationData[siteNumber]['name'] = siteName;
-        stationData[siteNumber]['lat'] = lat;
-        stationData[siteNumber]['lon'] = lon;
-        stationData[siteNumber]['data'][variable] = value;
+        extractedData[siteNumber]['name'] = siteName;
+        extractedData[siteNumber]['lat'] = lat;
+        extractedData[siteNumber]['lon'] = lon;
+        extractedData[siteNumber]['data'][variableCode] = value;
     }
-    return stationData;
+    return extractedData;
 }
 
 function convertToGeoJson(extractedData) {
@@ -95,74 +104,25 @@ function convertToGeoJson(extractedData) {
 }
 
 function buildPopupString(feature) {
-    popupString = ('<b>' + feature.properties.name + '<br>' +
-                   'Gage Number: ' + feature.properties.number + '</b>' +
+    var gageName = feature.properties.name;
+    var gageNumber = feature.properties.number;
+    var gageSiteURL = buildGageSiteURL(gageNumber);
+    popupString = ('<a href="' + gageSiteURL + '" target="_blank">' +
+                   '<b>' + gageName + '<br>' +
+                   'Gage Number: ' + gageNumber + '</b></a>' +
                    '<ul>');
     var variables = feature.properties.variables;
     for (var i in variables) {
         variable = variables[i];
+        variableName = VARIABLE_CODES[variable];
         value = feature.properties[variable];
-        popupString = (popupString + '<li>' + variable + 
+        if (value == -999999) {
+        };
+        popupString = (popupString + '<li>' + variableName + 
                        ' = ' + value + '</li>');
     }
     popupString = popupString + '</ul>';
     return popupString;
-}
-
-function getStateGeoJsonData(state) {
-    result = httpGet(buildStateRequest(state));
-    console.log(state + ' - data received.');
-    extracted = extractStationData(result);
-    stations = convertToGeoJson(extracted);
-    return stations;
-}
-
-function getBboxGeoJsonData(box) {
-    result = httpGet(buildBboxRequest(box));
-    console.log('data received');
-    extracted = extractStationData(result);
-    stations = convertToGeoJson(extracted);
-    return stations;
-}
-
-function mapState(state) {
-    geoJsonData = getStateGeoJsonData(state);
-    L.geoJson(geoJsonData, {
-        onEachFeature: function(feature, layer) {
-            popupString = buildPopupString(feature);
-            layer.bindPopup(popupString);
-        }
-    }).addTo(map);
-}
-
-function mapStateMarkerCluster(state) {
-    geoJsonData = getStateGeoJsonData(state);
-    var markers = new L.MarkerClusterGroup();
-    for (var i in geoJsonData.features) {
-        feature = geoJsonData.features[i];
-        lat = feature.geometry.coordinates[1];
-        lon = feature.geometry.coordinates[0];
-        marker = L.marker(new L.LatLng(lat, lon), { });
-        popup = buildPopupString(feature);
-        marker.bindPopup(popup);
-        markers.addLayer(marker);
-    }
-    map.addLayer(markers);
-}
-
-function mapBboxMarkerCluster(box) {
-    geoJsonData = getBboxGeoJsonData(box);
-    var markers = new L.MarkerClusterGroup();
-    for (var i in geoJsonData.features) {
-        feature = geoJsonData.features[i];
-        lat = feature.geometry.coordinates[1];
-        lon = feature.geometry.coordinates[0];
-        marker = L.marker(new L.LatLng(lat, lon), { });
-        popup = buildPopupString(feature);
-        marker.bindPopup(popup);
-        markers.addLayer(marker);
-    }
-    map.addLayer(markers);
 }
 
 function mapMarkerCluster(responseText) {
@@ -187,7 +147,6 @@ function mapStateMarkerClusters(states) {
         httpGet(buildStateRequest(state), mapMarkerCluster);
     }
 }
-
 
 function mapStateIsolines(state, variable, resolution, breaks) {
     geoJsonData = getStateGeoJsonData(state);
