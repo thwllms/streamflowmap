@@ -21,6 +21,20 @@
     <script>
         
         initmap();
+
+        // request & map by lat-lon box
+        // USGS API limits request box to 5 x 5 degrees
+        //latlon_boxes = [
+        //    [[-85, 25], [-60, 50]],
+        //    [[-110, 25], [-85, 50]],
+        //    [[-135, 25], [-110, 50]]
+        //];
+        //for (i in latlon_boxes) {
+        //    box = latlon_boxes[i];
+        //    mapBboxMarkerCluster(box);
+        //}
+                         
+        // request & map by state
         states = ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN',
                   'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV',
                   'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN',
@@ -29,6 +43,8 @@
             state = states[i];
             mapStateMarkerCluster(state);
         }
+
+        // request state, map isolines
         //mapState('DE');
         //breaks = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
         //mapStateIsolines('VA', 'random', 100, breaks);
