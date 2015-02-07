@@ -20,11 +20,24 @@ function httpGet(theURL) {
     return request.responseText;
 }
 
-function buildRequest(state) {
+function buildStateRequest(state) {
     // Builds request URL for a given state
     var pathBegin = 'http://waterservices.usgs.gov/nwis/iv/?stateCd=';
     var pathEnd = '&format=json';
     var path = pathBegin + state + pathEnd;
+    return path;
+}
+
+function buildBboxRequest(box) {
+    // Builds request URL for a lat-lon box
+    var pathBegin = 'http://waterservices.usgs.gov/nwis/iv/?bBox=';
+    lon1 = box[0][0];
+    lat1 = box[0][1];
+    lon2 = box[1][0];
+    lat2 = box[1][1];
+    latlon_string = [lon1, lat1, lon2, lat2].join();
+    var pathEnd = '&format=json';
+    var path = pathBegin + latlon_string + pathEnd;
     return path;
 }
 
@@ -94,16 +107,24 @@ function buildPopupString(feature) {
     return popupString;
 }
 
-function getGeoJsonData(state) {
-    result = httpGet(buildRequest(state));
+function getStateGeoJsonData(state) {
+    result = httpGet(buildStateRequest(state));
     console.log(state + ' - data received.');
     extracted = extractStationData(result);
     stations = convertToGeoJson(extracted);
     return stations;
 }
 
+function getBboxGeoJsonData(box) {
+    result = httpGet(buildBboxRequest(box));
+    console.log('data received');
+    extracted = extractStationData(result);
+    stations = convertToGeoJson(extracted);
+    return stations;
+}
+
 function mapState(state) {
-    geoJsonData = getGeoJsonData(state);
+    geoJsonData = getStateGeoJsonData(state);
     L.geoJson(geoJsonData, {
         onEachFeature: function(feature, layer) {
             popupString = buildPopupString(feature);
@@ -113,7 +134,22 @@ function mapState(state) {
 }
 
 function mapStateMarkerCluster(state) {
-    geoJsonData = getGeoJsonData(state);
+    geoJsonData = getStateGeoJsonData(state);
+    var markers = new L.MarkerClusterGroup();
+    for (var i in geoJsonData.features) {
+        feature = geoJsonData.features[i];
+        lat = feature.geometry.coordinates[1];
+        lon = feature.geometry.coordinates[0];
+        marker = L.marker(new L.LatLng(lat, lon), { });
+        popup = buildPopupString(feature);
+        marker.bindPopup(popup);
+        markers.addLayer(marker);
+    }
+    map.addLayer(markers);
+}
+
+function mapBboxMarkerCluster(box) {
+    geoJsonData = getBboxGeoJsonData(box);
     var markers = new L.MarkerClusterGroup();
     for (var i in geoJsonData.features) {
         feature = geoJsonData.features[i];
@@ -128,7 +164,7 @@ function mapStateMarkerCluster(state) {
 }
 
 function mapStateIsolines(state, variable, resolution, breaks) {
-    geoJsonData = getGeoJsonData(state);
+    geoJsonData = getStateGeoJsonData(state);
     console.log(state + ' - processing isolines');
     isolined = turf.isolines(geoJsonData, variable, resolution, breaks);
     console.log(state + ' - finished processing isolines');
