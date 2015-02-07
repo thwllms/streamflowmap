@@ -1,10 +1,10 @@
-// GLobal array for storing variable code names.
+// GLobal array for storing variable codes/names.
 var VARIABLE_CODES = {};
 
 function createCORSRequest(method, url) {
     var xhr = new XMLHttpRequest();
     if ("withCredentials" in xhr) { 
-        xhr.open(method, url, false);
+        xhr.open(method, url, true);
     } else if (typeof XDomainRequest!="undefined") {
         xhr = new XDomainRequest();
         xhr.open(method, url);
@@ -14,10 +14,12 @@ function createCORSRequest(method, url) {
     return xhr;
 }
 
-function httpGet(theURL) {
+function httpGet(theURL, callback) {
     var request = createCORSRequest('GET', theURL);
+    request.onload = function() {
+        callback(this.responseText);
+    }
     request.send();
-    return request.responseText;
 }
 
 function buildStateRequest(state) {
@@ -162,6 +164,30 @@ function mapBboxMarkerCluster(box) {
     }
     map.addLayer(markers);
 }
+
+function mapMarkerCluster(responseText) {
+    extracted = extractStationData(responseText);
+    geoJsonData = convertToGeoJson(extracted);
+    var markers = new L.MarkerClusterGroup();
+    for (var i in geoJsonData.features) {
+        feature = geoJsonData.features[i];
+        lat = feature.geometry.coordinates[1];
+        lon = feature.geometry.coordinates[0];
+        marker = L.marker(new L.LatLng(lat, lon), { });
+        popup = buildPopupString(feature);
+        marker.bindPopup(popup);
+        markers.addLayer(marker);
+    }
+    map.addLayer(markers);
+}
+
+function mapStateMarkerClusters(states) {
+    for (i in states) {
+        state = states[i];
+        httpGet(buildStateRequest(state), mapMarkerCluster);
+    }
+}
+
 
 function mapStateIsolines(state, variable, resolution, breaks) {
     geoJsonData = getStateGeoJsonData(state);
