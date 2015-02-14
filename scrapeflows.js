@@ -128,7 +128,19 @@ function buildPopupString(feature) {
 function mapMarkerCluster(responseText) {
     extracted = extractStationData(responseText);
     geoJsonData = convertToGeoJson(extracted);
-    var markers = new L.MarkerClusterGroup();
+    var markers = new L.MarkerClusterGroup({
+        iconCreateFunction: function(cluster) {
+            var markers = cluster.getAllChildMarkers();
+            var n = 0;
+            for (var i = 0; i < markers.length; i++) {
+                var flow = markers[i]['00060'];
+                if (flow > -999999 && !(flow===undefined)) {
+                    n += Number(flow);
+                };
+            }
+            return new L.DivIcon({ html: '<b>' + n.toString() + '</b>' });
+        }
+    });
     for (var i in geoJsonData.features) {
         feature = geoJsonData.features[i];
         lat = feature.geometry.coordinates[1];
@@ -136,6 +148,11 @@ function mapMarkerCluster(responseText) {
         marker = L.marker(new L.LatLng(lat, lon), { });
         popup = buildPopupString(feature);
         marker.bindPopup(popup);
+        marker['asdf'] = 10;
+        for (var j in feature.properties.variables) {
+            var varCode = feature.properties.variables[j];
+            marker[varCode] = feature.properties[varCode];
+        }
         markers.addLayer(marker);
     }
     map.addLayer(markers);
