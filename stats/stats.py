@@ -28,13 +28,13 @@ def get_list_of_stations(parsed_data):
     return station_list
 
 def build_stats_url(station):
-    # Build url for the statistics service for a station.
+    # Build stats service url for a station.
     url_begin = 'http://waterservices.usgs.gov/nwis/stat/?format=rdb&sites='
     url = url_begin + station
     return url
 
 def get_raw_stats(station):
-    # Download stats for a given station and parse.
+    # Download stats for a given station.
     data_url = build_stats_url(station)
     raw_stats = urllib2.urlopen(data_url).read()
     return raw_stats 
