@@ -1,5 +1,6 @@
 import urllib2
 import json
+import pymongo
 
 STATES = ['Al', 'AK', 'AZ', 'AR']
 
@@ -80,4 +81,4 @@ if __name__ == '__main__':
         stations = get_list_of_stations(data)
         for station in stations:
             stats = get_stats(station)
-            print '\t' + station + '\t' + str(len(stats))
+            print '\t' + station + '\t' + str(stats.keys())
