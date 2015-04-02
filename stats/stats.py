@@ -68,17 +68,61 @@ def parse_stats(raw_stats):
 
     return parsed_stats
 
+class MissingStatsException(Exception):
+    pass
+
+class MismatchedStatsException(Exception):
+    pass
+
+def check_stats(stats):
+    fields = stats.keys()
+    maxlen = max([len(stats[field]) for field in fields])
+    minlen = min([len(stats[field]) for field in fields])
+    if maxlen != minlen:
+        raise MismatchedStatsException('Mismatched stats: ' + str(maxlen) + ', ' + str(minlen))
+
 def get_stats(station):
     # Get parsed stats for a given station.
     raw_stats = get_raw_stats(station)
     stats = parse_stats(raw_stats)
+    if len(stats)==0:
+        raise MissingStatsException('Failed to get stats for ' + station)
+    #check_stats(stats)
     return stats
 
-if __name__ == '__main__':
+def load_mongodb(stats):
+    # Update mongodb with stats for a given station.
+    client = pymongo.MongoClient()
+    db = client.test_database
+    usgs_stats = db.usgs_stats
+    fields = stats.keys()
+    station = stats['site_no'][0]
+    for i in range(0, len(stats['site_no'])):
+        month = stats['month_nu'][i]
+        day = stats['day_nu'][i]
+        date = {'month': month,
+                'day': day}
+        data = {station:{}}
+        for field in fields:
+            try:
+                data[station][field] = stats[field][i]
+            except IndexError:
+                print station, stats['parameter_cd'][i], field, i
+        usgs_stats.update(date, {'$set': data})
+
+def test(load_mongo=True):
     for state in STATES:
         print state
         data = get_state_data(state)
         stations = get_list_of_stations(data)
         for station in stations:
-            stats = get_stats(station)
-            print '\t' + station + '\t' + str(stats.keys())
+            try:
+                stats = get_stats(station)
+                print '\t' + station + '\t' + str(stats.keys())
+                if load_mongo==True:
+                    load_mongodb(stats)
+            except MissingStatsException:
+                print '\t' + station + '\tFailed to get stats.'            
+
+if __name__ == '__main__':
+    test(True)
