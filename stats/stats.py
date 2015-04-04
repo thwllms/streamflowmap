@@ -92,13 +92,13 @@ def get_stats(station):
     #check_stats(stats)
     return stats
 
-def load_mongodb(stats):
+def load_mongodb(stats, mongo_collection):
     # Update mongodb with stats for a given station.
-    client = pymongo.MongoClient()
-    db = client.test_database
-    if 'usgs_stats' not in db.collection_names():
-        db.create_collection('usgs_stats')
-    usgs_stats = db.usgs_stats
+    #client = pymongo.MongoClient()
+    #db = client.test_database
+    #if 'usgs_stats' not in db.collection_names():
+    #    db.create_collection('usgs_stats')
+    #usgs_stats = db.usgs_stats
     fields = stats.keys()
     try:
         station = stats['site_no'][0]
@@ -116,9 +116,15 @@ def load_mongodb(stats):
             except IndexError:
                 #print '\t' + '\t'.join([station, stats['parameter_cd'][i], field, str(i)])
                 None
-        usgs_stats.update(date, {'$set': data}, upsert=True)
+        mongo_collection.update(date, {'$set': data}, upsert=True)
 
-def test(load_mongo=True):
+def main(load_mongo=True):
+    if load_mongo==True:
+        client = pymongo.MongoClient()
+        db = client.test_database
+        if 'usgs_stats' not in db.collection_names():
+            db.create_collection('usgs_stats')
+        usgs_stats = db.usgs_stats
     for state in STATES:
         print state
         data = get_state_data(state)
@@ -127,11 +133,11 @@ def test(load_mongo=True):
             try:
                 stats = get_stats(station)
                 mismatch = check_stats_mismatch(stats)
-                print '\t' + station + '\t' + str(mismatch) # + '\t' + str(stats.keys())
+                print '\t' + station + '\t' + str(mismatch)
                 if load_mongo==True:
-                    load_mongodb(stats)
+                    load_mongodb(stats, usgs_stats)
             except MissingStatsException:
                 print '\t' + station + '\tFailed to get stats.'            
 
 if __name__ == '__main__':
-    test(True)
+    main(True)
