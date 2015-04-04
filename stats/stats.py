@@ -2,7 +2,7 @@ import urllib2
 import json
 import pymongo
 
-STATES = ['Al', 'AK', 'AZ', 'AR']
+STATES = ['Al', 'AK', 'AZ']
 
 def build_live_data_url(state):
     # Build url for the live data service by state.
@@ -60,7 +60,7 @@ def parse_stats(raw_stats):
 
     rows = filtered_lines[2:]
     for row in rows:
-        row_values = row.strip().split('\t')
+        row_values = row.split('\t')
         for i in range(0, len(row_values)):
             value = row_values[i]
             column = header_columns[i]
@@ -79,7 +79,7 @@ def check_stats_mismatch(stats):
     maxlen = max([len(stats[field]) for field in fields])
     minlen = min([len(stats[field]) for field in fields])
     if maxlen != minlen:
-        return True
+        return 'True (' + str(minlen) + ', ' + str(maxlen) + ')'
     else:
         return False
 
@@ -96,9 +96,14 @@ def load_mongodb(stats):
     # Update mongodb with stats for a given station.
     client = pymongo.MongoClient()
     db = client.test_database
+    if 'usgs_stats' not in db.collection_names():
+        db.create_collection('usgs_stats')
     usgs_stats = db.usgs_stats
     fields = stats.keys()
-    station = stats['site_no'][0]
+    try:
+        station = stats['site_no'][0]
+    except IndexError:
+        print '\tEmpty stats file.'
     for i in range(0, len(stats['site_no'])):
         month = stats['month_nu'][i]
         day = stats['day_nu'][i]
@@ -109,8 +114,9 @@ def load_mongodb(stats):
             try:
                 data[station][field] = stats[field][i]
             except IndexError:
-                print station, stats['parameter_cd'][i], field, i
-        usgs_stats.update(date, {'$set': data})
+                #print '\t' + '\t'.join([station, stats['parameter_cd'][i], field, str(i)])
+                None
+        usgs_stats.update(date, {'$set': data}, upsert=True)
 
 def test(load_mongo=True):
     for state in STATES:
@@ -121,11 +127,11 @@ def test(load_mongo=True):
             try:
                 stats = get_stats(station)
                 mismatch = check_stats_mismatch(stats)
-                print '\t' + station + '\t' + str(mismatch)  + '\t' + str(stats.keys())
+                print '\t' + station + '\t' + str(mismatch) # + '\t' + str(stats.keys())
                 if load_mongo==True:
                     load_mongodb(stats)
             except MissingStatsException:
                 print '\t' + station + '\tFailed to get stats.'            
 
 if __name__ == '__main__':
-    test(False)
+    test(True)
