@@ -74,12 +74,14 @@ class MissingStatsException(Exception):
 class MismatchedStatsException(Exception):
     pass
 
-def check_stats(stats):
+def check_stats_mismatch(stats):
     fields = stats.keys()
     maxlen = max([len(stats[field]) for field in fields])
     minlen = min([len(stats[field]) for field in fields])
     if maxlen != minlen:
-        raise MismatchedStatsException('Mismatched stats: ' + str(maxlen) + ', ' + str(minlen))
+        return True
+    else:
+        return False
 
 def get_stats(station):
     # Get parsed stats for a given station.
@@ -118,11 +120,12 @@ def test(load_mongo=True):
         for station in stations:
             try:
                 stats = get_stats(station)
-                print '\t' + station + '\t' + str(stats.keys())
+                mismatch = check_stats_mismatch(stats)
+                print '\t' + station + '\t' + str(mismatch)  + '\t' + str(stats.keys())
                 if load_mongo==True:
                     load_mongodb(stats)
             except MissingStatsException:
                 print '\t' + station + '\tFailed to get stats.'            
 
 if __name__ == '__main__':
-    test(True)
+    test(False)
