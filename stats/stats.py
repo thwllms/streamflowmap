@@ -75,6 +75,7 @@ class MismatchedStatsException(Exception):
     pass
 
 def check_stats_mismatch(stats):
+    # Check if there's data missing from any columns.
     fields = stats.keys()
     maxlen = max([len(stats[field]) for field in fields])
     minlen = min([len(stats[field]) for field in fields])
@@ -94,11 +95,6 @@ def get_stats(station):
 
 def load_mongodb(stats, mongo_collection):
     # Update mongodb with stats for a given station.
-    #client = pymongo.MongoClient()
-    #db = client.test_database
-    #if 'usgs_stats' not in db.collection_names():
-    #    db.create_collection('usgs_stats')
-    #usgs_stats = db.usgs_stats
     fields = stats.keys()
     try:
         station = stats['site_no'][0]
