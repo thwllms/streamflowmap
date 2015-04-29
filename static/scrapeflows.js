@@ -125,6 +125,21 @@ function buildPopupString(feature) {
     return popupString;
 }
 
+function markerClusterSize(n) {
+    if (n >= 100) {
+        size = 30;
+    } else if (n >= 50) {
+        size = 25;
+    } else if (n >= 25) {
+        size = 22;
+    } else if (n >= 10) {
+        size = 20;
+    } else {
+        size = 15;
+    }
+    return size;
+}
+
 function mapMarkerCluster(responseText) {
     extracted = extractStationData(responseText);
     geoJsonData = convertToGeoJson(extracted);
@@ -135,10 +150,14 @@ function mapMarkerCluster(responseText) {
             for (var i = 0; i < markers.length; i++) {
                 var flow = markers[i]['00060'];
                 if (flow > -999999 && !(flow===undefined)) {
-                    n += Number(flow);
+                    //n += Number(flow);
+                    n += 1;
                 };
             }
-            return new L.DivIcon({ html: '<b>' + n.toString() + '</b>' });
+            size = markerClusterSize(n)
+            return new L.DivIcon({ html: '<b>' + n.toString() + '</b>',
+                                   className: 'mycluster',
+                                   iconSize: L.point(size, size) });
         }
     });
     for (var i in geoJsonData.features) {
