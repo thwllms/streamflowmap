@@ -2,7 +2,7 @@ import urllib2
 import json
 import pymongo
 
-STATES = ['AL', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DE', 
+STATES = ['AL', 'AK', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DE', 
           'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 
           'KY', 'LA', 'MA', 'MD', 'ME', 'MI', 'MN', 'MO',
           'MS' ,'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM',
