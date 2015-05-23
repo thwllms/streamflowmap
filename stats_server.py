@@ -12,9 +12,9 @@ from bson import json_util
 def index():
     return app.send_static_file('index.html')
 
-@app.route('/stats/<month>/<day>')
-def get_stats(month, day):
-    result = usgs_stats.find({"month":month, "day":day})
+@app.route('/stats/<month>/<day>/<param>')
+def get_stats(month, day, param):
+    result = usgs_stats.find_one({"month":month, "day":day, "param":param})
     json_result = json_util.dumps(result)
     return json_result
 

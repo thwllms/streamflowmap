@@ -2,7 +2,13 @@ import urllib2
 import json
 import pymongo
 
-STATES = ['Al', 'AK', 'AZ']
+STATES = ['AL', 'AL', 'AR', 'AZ', 'CA', 'CO', 'CT', 'DE', 
+          'FL', 'GA', 'HI', 'IA', 'ID', 'IL', 'IN', 'KS', 
+          'KY', 'LA', 'MA', 'MD', 'ME', 'MI', 'MN', 'MO',
+          'MS' ,'MT', 'NC', 'ND', 'NE', 'NH', 'NJ', 'NM',
+          'NV', 'NY', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 
+          'SD', 'TN', 'TX', 'UT', 'VA', 'VT', 'WA', 'WI',
+          'WV', 'WY']
 
 def build_live_data_url(state):
     # Build url for the live data service by state.
@@ -80,7 +86,7 @@ def check_stats_mismatch(stats):
     maxlen = max([len(stats[field]) for field in fields])
     minlen = min([len(stats[field]) for field in fields])
     if maxlen != minlen:
-        return 'True (' + str(minlen) + ', ' + str(maxlen) + ')'
+        return 'True (min col len: ' + str(minlen) + ', max col len: ' + str(maxlen) + ')'
     else:
         return False
 
@@ -93,18 +99,21 @@ def get_stats(station):
     #check_stats(stats)
     return stats
 
-def load_mongodb(stats, mongo_collection):
+def load_mongodb(station, stats, mongo_collection):
     # Update mongodb with stats for a given station.
     fields = stats.keys()
     try:
+        # Check if the stats file is empty. Common problem. If empty, print error message.
         station = stats['site_no'][0]
     except IndexError:
-        print '\tEmpty stats file.'
+        print '\t' + station + '\tEmpty stats file.'
     for i in range(0, len(stats['site_no'])):
         month = stats['month_nu'][i]
         day = stats['day_nu'][i]
-        date = {'month': month,
-                'day': day}
+        param = stats['parameter_cd'][i]
+        date_param = {'month': month,
+                      'day': day,
+                      'param': param}
         data = {station:{}}
         for field in fields:
             try:
@@ -112,7 +121,7 @@ def load_mongodb(stats, mongo_collection):
             except IndexError:
                 #print '\t' + '\t'.join([station, stats['parameter_cd'][i], field, str(i)])
                 None
-        mongo_collection.update(date, {'$set': data}, upsert=True)
+        mongo_collection.update(date_param, {'$set': data}, upsert=True)
 
 def main(load_mongo=True):
     if load_mongo==True:
@@ -129,9 +138,12 @@ def main(load_mongo=True):
             try:
                 stats = get_stats(station)
                 mismatch = check_stats_mismatch(stats)
-                print '\t' + station + '\t' + str(mismatch)
+                if mismatch == False:
+                    print '\t' + station
+                else:
+                    print '\t' + station + '\tMissing data.'
                 if load_mongo==True:
-                    load_mongodb(stats, usgs_stats)
+                    load_mongodb(station, stats, usgs_stats)
             except MissingStatsException:
                 print '\t' + station + '\tFailed to get stats.'            
 
