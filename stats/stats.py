@@ -80,6 +80,9 @@ class MissingStatsException(Exception):
 class MismatchedStatsException(Exception):
     pass
 
+class EmptyStatsFileException(Exception):
+    pass
+
 def check_stats_mismatch(stats):
     # Check if there's data missing from any columns.
     fields = stats.keys()
@@ -103,10 +106,12 @@ def load_mongodb(station, stats, mongo_collection):
     # Update mongodb with stats for a given station.
     fields = stats.keys()
     try:
-        # Check if the stats file is empty. Common problem. If empty, print error message.
+        # Check if the stats file is empty. Common problem. If empty, 
+        # print error message.
         station = stats['site_no'][0]
     except IndexError:
-        print '\t' + station + '\tEmpty stats file.'
+        #print '\t' + station + '\tEmpty stats file.'
+        raise EmptyStatsFileException('Empty stats file for ' + station)
     for i in range(0, len(stats['site_no'])):
         month = stats['month_nu'][i]
         day = stats['day_nu'][i]
@@ -131,7 +136,6 @@ def main(load_mongo=True):
             db.create_collection('usgs_stats')
         usgs_stats = db.usgs_stats
     for state in STATES:
-        print state
         data = get_state_data(state)
         stations = get_list_of_stations(data)
         for station in stations:
@@ -139,13 +143,15 @@ def main(load_mongo=True):
                 stats = get_stats(station)
                 mismatch = check_stats_mismatch(stats)
                 if mismatch == False:
-                    print '\t' + station
+                    print '\t'.join([state, station])
                 else:
-                    print '\t' + station + '\tMissing data.'
+                    print '\t'.join([state, station, '\tMissing data.'])
                 if load_mongo==True:
                     load_mongodb(station, stats, usgs_stats)
             except MissingStatsException:
-                print '\t' + station + '\tFailed to get stats.'            
+                print '\t'.join([state, station, '\tFailed to get stats.'])            
+            except EmptyStatsFileException:
+                print '\t'.join([state, station, '\tEmpty stats file.'])
 
 if __name__ == '__main__':
     main(True)
