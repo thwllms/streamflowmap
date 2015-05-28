@@ -121,11 +121,21 @@ def load_mongodb(station, stats, mongo_collection):
                       'param': param}
         data = {station:{}}
         for field in fields:
-            try:
-                data[station][field] = stats[field][i]
-            except IndexError:
-                #print '\t' + '\t'.join([station, stats['parameter_cd'][i], field, str(i)])
-                None
+            if field in ['min_va',
+                         'p05_va',
+                         'p10_va',
+                         'p20_va',
+                         'p25_va',
+                         'p50_va',
+                         'p75_va',
+                         'p80_va',
+                         'p90_va',
+                         'p95_va',
+                         'max_va']:
+                try:
+                    data[station][field] = stats[field][i]
+                except IndexError:
+                    None
         mongo_collection.update(date_param, {'$set': data}, upsert=True)
 
 def main(load_mongo=True):

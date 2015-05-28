@@ -140,6 +140,66 @@ function markerClusterSize(n) {
     return size;
 }
 
+function markerClusterColor(avgPcntValue) {
+    var color = int(avgPcntValue * 255);
+    return color;
+}
+
+function cleanStats(stats) {
+    var cleanedStats = {};
+    var statVars = {'min_va': 0.00,
+                    'p05_va': 0.05,
+                    'p10_va': 0.10,
+                    'p20_va': 0.20,
+                    'p25_va': 0.25,
+                    'p50_va': 0.50,
+                    'p75_va': 0.75,
+                    'p80_va': 0.80,
+                    'p90_va': 0.90,
+                    'p95_va': 0.95,
+                    'max_va': 1.00};
+    var statVarKeys = Object.keys(statVars);
+    for (var i = 0; i < statsVarKeys.length; i++) {
+        var statVarName = statVarKeys[i];
+        var statValue = stats[statVarName];
+        if (statValue != '') {
+            cleanedStats[statVarName] = statValue;
+    }
+    return cleanedStats;
+}
+
+
+function pcntValue(value, stats) {
+    var pcntSteps = {0.00: stats.min_va, 
+                     0.05: stats.p05_va,
+                     0.10: stats.p10_va,
+                     0.20: stats.p20_va,
+                     0.25: stats.p25_va,
+                     0.50: stats.p50_va,
+                     0.75: stats.p75_va,
+                     0.80: stats.p80_va,;
+                     0.90: stats.p90_va,
+                     0.95: stats.p95_va,
+                     1.00: stats.max_va};
+    var pcntKeys = Object.keys(pcntSteps);
+    if (value <= stats.min_va) {
+        return 0.00;
+    } else if (value >= stats.max_va) {
+        return 1.00;
+    } else {
+        for (var i = 0; i < pcntKeys.length; i++) {
+            var pcntThis = pcntKeys[i];
+            var pcntNext = pcntKeys[i+1];
+            var valThis = float(pcntSteps[pcntThis]);
+            var valNext = float(pcntSteps[pcntNext]);
+            if (valThis <= value <= valNext) {
+                valRatio = (value - valThis) / (valNext - valThis);
+                pcntRemainder = (pcntNext - pcntThis) * valRatio;
+                pcnt = pcntThis + pcntRemainder;
+                return pcnt;
+            }
+}
+
 function mapMarkerCluster(responseText) {
     extracted = extractStationData(responseText);
     geoJsonData = convertToGeoJson(extracted);
