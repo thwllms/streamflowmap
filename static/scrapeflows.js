@@ -164,6 +164,7 @@ function cleanStats(stats) {
         var statValue = stats[statVarName];
         if (statValue != '') {
             cleanedStats[statVarName] = statValue;
+        }
     }
     return cleanedStats;
 }
@@ -177,7 +178,7 @@ function pcntValue(value, stats) {
                      0.25: stats.p25_va,
                      0.50: stats.p50_va,
                      0.75: stats.p75_va,
-                     0.80: stats.p80_va,;
+                     0.80: stats.p80_va,
                      0.90: stats.p90_va,
                      0.95: stats.p95_va,
                      1.00: stats.max_va};
@@ -198,6 +199,8 @@ function pcntValue(value, stats) {
                 pcnt = pcntThis + pcntRemainder;
                 return pcnt;
             }
+        }
+    }
 }
 
 function mapMarkerCluster(responseText) {
